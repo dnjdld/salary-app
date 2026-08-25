@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>월급 배분표</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563EB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="월급 배분표">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E5E7EB;
+    --text:#1F2937;
+    --sub:#6B7280;
+    --accent:#2563EB;
+    --accent-soft:#EFF4FF;
+    --good:#16A34A;
+    --warn:#DC2626;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
+    line-height:1.5;
+    font-size:14px;
+  }
+  .app{ max-width:760px; margin:0 auto; padding:24px 16px 80px; }
+
+  .top{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:20px; flex-wrap:wrap; gap:10px;
+  }
+  .top h1{ font-size:20px; margin:0; font-weight:700; }
+  .top .date{ font-size:12.5px; color:var(--sub); }
+
+  .summary-bar{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:20px; flex-wrap:wrap; gap:10px;
+    position:sticky; top:8px; z-index:10;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  }
+  .summary-bar .label{ font-size:12.5px; color:var(--sub); }
+  .summary-bar .value{ font-size:22px; font-weight:700; }
+  .summary-bar .value.ok{ color:var(--good); }
+  .summary-bar .value.bad{ color:var(--warn); }
+
+  .section-divider{
+    display:flex; align-items:center; gap:10px;
+    margin:28px 2px 14px;
+  }
+  .section-divider .num{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--text); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; flex-shrink:0;
+  }
+  .section-divider h2{ font-size:15px; margin:0; font-weight:700; }
+  .section-divider .sub{ font-size:12px; color:var(--sub); margin-left:auto; }
+  .section-divider:first-child{ margin-top:0; }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px 18px;
+    margin-bottom:12px;
+  }
+  .card h3{ font-size:13.5px; margin:0 0 3px; font-weight:700; }
+  .card .desc{ font-size:12px; color:var(--sub); margin:0 0 12px; }
+
+  label.field{ display:block; font-size:12px; color:var(--sub); margin-bottom:4px; }
+  input[type=number], input[type=text], input[type=month]{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:6px;
+    font-size:13.5px;
+    font-family:inherit;
+    color:var(--text);
+  }
+  input:focus{ outline:2px solid var(--accent); outline-offset:0; border-color:transparent; }
+
+  .btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    border-radius:6px;
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+  }
+  .btn:hover{ background:#1D4ED8; }
+  .btn.secondary{ background:#fff; color:var(--text); border:1px solid var(--border); }
+  .btn.secondary:hover{ background:#F3F4F6; }
+  .btn.danger{ background:#fff; color:var(--warn); border:1px solid var(--border); padding:6px 10px; font-size:12px; }
+  .btn.danger:hover{ background:#FEF2F2; }
+  .btn.sm{ padding:6px 10px; font-size:12px; }
+  .sign-btn{ min-width:40px; flex-shrink:0; font-weight:700; }
+
+  .row-inline{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .row-inline input[type=month]{ max-width:150px; }
+  .row-2{ display:flex; gap:12px; flex-wrap:wrap; }
+  .row-2 > div{ flex:1; min-width:140px; }
+
+  /* simple input row: label + input, minimal (used in the INPUT zone) */
+  .in-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .in-row label{ flex:1; font-size:13px; color:var(--text); margin:0; }
+  .in-row input{ width:140px; text-align:right; flex-shrink:0; }
+  .in-row .readout{ width:140px; text-align:right; flex-shrink:0; font-size:13px; font-weight:600; }
+
+  table.list{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.list th{
+    text-align:left; font-size:11px; color:var(--sub); font-weight:600;
+    padding:6px 8px; border-bottom:1px solid var(--border);
+  }
+  table.list td{ padding:7px 8px; border-bottom:1px solid #F1F2F4; }
+  .num-cell{ text-align:right; font-variant-numeric:tabular-nums; }
+  .empty-row td{ text-align:center; color:var(--sub); padding:14px; font-style:italic; font-size:12px; }
+  .add-form{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+  .add-form input{ flex:1; min-width:80px; }
+  .add-form input.pct{ max-width:70px; flex:none; }
+
+  .quick-total{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-top:8px; margin-top:8px; border-top:1px dashed var(--border);
+    font-size:12.5px; color:var(--sub);
+  }
+  .quick-total b{ color:var(--text); font-size:13.5px; }
+
+  /* ===== 상세내역 (detail statement) ===== */
+  .statement{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:6px 18px 18px;
+  }
+  .stmt-block{ padding:14px 0; border-bottom:1px solid var(--border); }
+  .stmt-block:last-of-type{ border-bottom:none; }
+  .stmt-title{ font-size:13.5px; font-weight:700; margin:0 0 10px; }
+  .stmt-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:13px; padding:4px 0; gap:10px;
+  }
+  .stmt-row .name{ color:var(--text); }
+  .stmt-row .amt{ font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+  .stmt-row .pct{ font-size:11.5px; color:var(--sub); min-width:52px; text-align:right; flex-shrink:0; }
+  .stmt-row.total{ font-weight:700; border-top:1px solid var(--border); margin-top:6px; padding-top:8px; }
+  .stmt-row.big .amt{ font-size:17px; }
+  .stmt-empty{ font-size:12px; color:var(--sub); font-style:italic; padding:4px 0; }
+  .hint{ font-size:11.5px; color:var(--sub); margin-top:6px; }
+  .hint.good{ color:var(--good); }
+  .hint.bad{ color:var(--warn); }
+  .bar-track{ height:6px; background:#F1F2F4; border-radius:4px; overflow:hidden; margin-top:5px; }
+  .bar-fill{ height:100%; border-radius:4px; background:var(--accent); }
+
+  .reserve-box{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--accent-soft); border-radius:6px; padding:8px 10px; margin-top:6px;
+    font-size:12px; flex-wrap:wrap; gap:8px;
+  }
+
+  .footer-actions{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  .chart-wrap svg text{ font-family:inherit; }
+
+  .save-toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--text); color:#fff; padding:9px 18px; border-radius:6px;
+    font-size:12.5px; opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+  .save-toast.show{ opacity:1; }
+
+  @media (max-width:520px){
+    .in-row input, .in-row .readout{ width:110px; }
+    table.list th, table.list td{ padding:6px 4px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <h1>월급 배분표</h1>
+    <span class="date" id="today-label"></span>
+  </div>
+
+  <div class="summary-bar">
+    <div>
+      <div class="label">최종 가용액</div>
+      <div class="value" id="top-available-display">0원</div>
+    </div>
+    <div>
+      <div class="label">여유비 (자동계산)</div>
+      <div class="value" id="top-buffer-display">0원</div>
+    </div>
+  </div>
+
+  <!-- ================= 입력 ================= -->
+  <div class="section-divider">
+    <div class="num">1</div>
+    <h2>입력</h2>
+    <span class="sub"><button class="btn secondary sm" onclick="copyLastMonth()">지난달 값 불러오기</button></span>
+  </div>
+
+  <div class="card">
+    <h3>월급</h3>
+    <p class="desc">급여 항목별 금액을 입력하세요.</p>
+    <div id="gross-input-rows"></div>
+
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+      <label class="field" style="margin-bottom:6px;">그외 (추가 소득 · 공제, + / − 가능)</label>
+      <table class="list">
+        <thead><tr><th>내용</th><th style="text-align:right;">금액</th><th style="width:40px;"></th></tr></thead>
+        <tbody id="gross-other-body"></tbody>
+      </table>
+      <div class="add-form">
+        <button type="button" class="btn secondary sign-btn" id="other-add-sign-btn">+</button>
+        <input type="text" id="gross-other-name" placeholder="예: 국민연금">
+        <input type="text" inputmode="numeric" id="gross-other-amount" placeholder="예: 250,000">
+        <button class="btn sm" onclick="addGrossOtherItem()">추가</button>
+      </div>
+    </div>
+    <div class="quick-total"><span>실수령액</span><b id="quick-salary">0원</b></div>
+  </div>
+
+  <div class="card">
+    <h3>대출상환</h3>
+    <p class="desc">매달 갚는 대출을 항목별로 등록하세요.</p>
+    <table class="list">
+      <thead><tr><th>대출명</th><th style="text-align:right;">금액</th><th style="width:40px;"></th></tr></thead>
+      <tbody id="debt-body"></tbody>
+    </table>
+    <div class="add-form">
+      <input type="text" id="debt-name" placeholder="항목명 (예: 신용대출)">
+      <input type="text" inputmode="numeric" id="debt-amount" placeholder="예: 300,000">
+      <button class="btn sm" onclick="addDebtItem()">추가</button>
+    </div>
+    <div class="quick-total"><span>대출상환 합계</span><b id="quick-debt">0원</b></div>
+  </div>
+
+  <div class="card">
+    <h3>투자</h3>
+    <p class="desc">적금, 청약, 주식 등 미래를 위해 넣는 항목이에요.</p>
+    <table class="list">
+      <thead><tr><th>항목</th><th style="text-align:right;">금액</th><th style="width:40px;"></th></tr></thead>
+      <tbody id="invest-body"></tbody>
+    </table>
+    <div class="add-form">
+      <input type="text" id="invest-name" placeholder="항목명 (예: ETF)">
+      <input type="text" inputmode="numeric" id="invest-amount" placeholder="예: 500,000">
+      <button class="btn sm" onclick="addInvestItem()">추가</button>
+    </div>
+    <div class="row-inline" style="margin-top:10px;">
+      <label class="field" style="margin:0;">목표 비율 (최종 가용액 기준)</label>
+      <input type="number" id="invest-goal" value="60" style="width:60px;"> %
+    </div>
+    <div class="quick-total"><span>투자 합계</span><b id="quick-invest">0원</b></div>
+  </div>
+
+  <div class="card">
+    <h3>지출</h3>
+    <p class="desc">카드값, 월세, 교육비는 금액을 바로 입력하고, 생활비는 소비 내역을 하나씩 추가하세요.</p>
+    <div id="expense-input-rows"></div>
+
+    <div style="margin-top:12px;">
+      <label class="field" style="margin-bottom:6px;">생활비 소비내역</label>
+      <table class="list">
+        <thead><tr><th>내역</th><th style="text-align:right;">금액</th><th style="width:40px;"></th></tr></thead>
+        <tbody id="living-item-body"></tbody>
+      </table>
+      <div class="add-form">
+        <input type="text" id="living-item-name" placeholder="예: 식비, 교통비, 마트">
+        <input type="text" inputmode="numeric" id="living-item-amount" placeholder="예: 150,000">
+        <button class="btn sm" onclick="addLivingItem()">추가</button>
+      </div>
+    </div>
+    <div class="quick-total"><span>생활비 합계</span><b id="quick-living">0원</b></div>
+    <div class="quick-total"><span>여유비 (자동계산)</span><b id="quick-buffer">0원</b></div>
+  </div>
+
+  <div class="card">
+    <h3>미리 적립 (여행비 · 경조비 · 취미 · 의류미용)</h3>
+    <p class="desc">매달 조금씩 떼어두고 나중에 꺼내 쓰는 통장이에요. (최종 가용액 기준 비율) 지금 모아둔 돈이 있다면 "직접 금액 추가"로 바로 채워서 시작할 수 있어요.</p>
+    <div id="reserve-input-rows"></div>
+  </div>
+
+  <div class="card">
+    <h3>순자산 스냅샷</h3>
+    <p class="desc">기준 월의 총자산과 총부채를 입력하세요.</p>
+    <div class="row-2">
+      <div>
+        <label class="field">총자산</label>
+        <input type="text" inputmode="numeric" id="assets-input" placeholder="예: 42,000,000">
+      </div>
+      <div>
+        <label class="field">총부채</label>
+        <input type="text" inputmode="numeric" id="liabilities-input" placeholder="예: 8,000,000">
+      </div>
+    </div>
+    <div class="quick-total"><span>현재 순자산</span><b id="quick-networth">0원</b></div>
+  </div>
+
+  <!-- ================= 상세내역 ================= -->
+  <div class="section-divider">
+    <div class="num">2</div>
+    <h2>상세내역</h2>
+    <span class="sub">입력한 내용이 자동으로 정리돼요</span>
+  </div>
+
+  <div class="statement">
+    <div class="stmt-block">
+      <p class="stmt-title">급여</p>
+      <div id="stmt-gross"></div>
+      <div class="stmt-row total"><span class="name">총급여</span><span class="amt" id="stmt-gross-total">0원</span></div>
+      <div id="stmt-other"></div>
+      <div class="stmt-row total"><span class="name">실수령액</span><span class="amt" id="stmt-net-pay">0원</span></div>
+    </div>
+
+    <div class="stmt-block">
+      <p class="stmt-title">대출상환</p>
+      <div id="stmt-debt"></div>
+      <div class="stmt-row total"><span class="name">대출상환 합계</span><span class="amt" id="stmt-debt-total">0원</span><span class="pct" id="stmt-debt-pct">0%</span></div>
+    </div>
+
+    <div class="stmt-block">
+      <p class="stmt-title">투자</p>
+      <div id="stmt-invest"></div>
+      <div class="stmt-row total"><span class="name">투자 합계</span><span class="amt" id="stmt-invest-total">0원</span><span class="pct" id="stmt-invest-pct">0%</span></div>
+      <div class="hint" id="stmt-invest-goal-status"></div>
+    </div>
+
+    <div class="stmt-block">
+      <div class="stmt-row big total" style="border-top:none;"><span class="name">최종 가용액</span><span class="amt" id="stmt-available">0원</span></div>
+      <p class="hint">실수령액 − 대출상환 − 투자. 아래 지출/적립 배분의 기준이 돼요.</p>
+    </div>
+
+    <div class="stmt-block">
+      <p class="stmt-title">지출</p>
+      <div id="stmt-expense"></div>
+      <div id="stmt-living-items" style="margin-top:6px;"></div>
+      <div class="stmt-row total" style="border-top:1px dashed var(--border); border-bottom:none; margin-top:10px; padding-top:8px;">
+        <span class="name">여유비 (자동계산)</span><span class="amt" id="stmt-buffer">0원</span><span class="pct" id="stmt-buffer-pct">0%</span>
+      </div>
+      <div class="hint" id="stmt-buffer-hint"></div>
+    </div>
+
+    <div class="stmt-block">
+      <p class="stmt-title">미리 적립</p>
+      <div id="stmt-reserve"></div>
+    </div>
+
+    <div class="stmt-block">
+      <p class="stmt-title">순자산</p>
+      <div class="stmt-row"><span class="name">총자산</span><span class="amt" id="stmt-assets">0원</span></div>
+      <div class="stmt-row"><span class="name">총부채</span><span class="amt" id="stmt-liabilities">0원</span></div>
+      <div class="stmt-row total"><span class="name">순자산</span><span class="amt" id="stmt-networth">0원</span></div>
+    </div>
+
+    <div class="stmt-block" style="border-bottom:none;">
+      <div class="row-inline" style="justify-content:flex-end;">
+        <label class="field" style="margin:0;">기록할 월</label>
+        <input type="month" id="salary-record-month">
+        <button class="btn" onclick="saveMonthlyRecord()">이번 달 기록 저장</button>
+      </div>
+      <p class="hint" style="text-align:right;">입력한 값은 자동 저장돼요. 이 버튼은 선택한 월의 예산과 순자산 스냅샷을 함께 기록해서 나중에 비교하는 용도예요.</p>
+    </div>
+  </div>
+
+  <!-- ================= 히스토리 ================= -->
+  <div class="section-divider">
+    <div class="num">3</div>
+    <h2>기록 · 추이</h2>
+  </div>
+
+  <div class="card">
+    <h3>월별 기록</h3>
+    <p class="desc">저장한 달들을 모아 소비 패턴을 비교해요.</p>
+    <div style="overflow-x:auto;">
+      <table class="list" style="min-width:640px;">
+        <thead><tr>
+          <th>월</th>
+          <th style="text-align:right;">월급</th>
+          <th style="text-align:right;">수령액</th>
+          <th style="text-align:right;">대출상환</th>
+          <th style="text-align:right;">투자</th>
+          <th style="text-align:right;">생활비</th>
+          <th style="text-align:right;">여유비</th>
+          <th style="width:100px;"></th>
+        </tr></thead>
+        <tbody id="monthly-history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>순자산 추이</h3>
+    <div class="chart-wrap" id="chart-wrap"></div>
+    <table class="list" style="margin-top:14px;">
+      <thead><tr><th>날짜</th><th style="text-align:right;">자산</th><th style="text-align:right;">부채</th><th style="text-align:right;">순자산</th><th style="width:100px;"></th></tr></thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>데이터 백업 · 불러오기</h3>
+    <p class="desc">브라우저에 자동 저장되지만, 기기를 바꾸거나 브라우저 데이터가 지워질 수 있으니 백업 파일을 받아두는 걸 추천해요.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn secondary" onclick="exportBackup()">백업 파일 저장</button>
+      <button class="btn secondary" onclick="document.getElementById('backup-file-input').click()">백업 파일 불러오기</button>
+      <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none;">
+    </div>
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+      <p class="desc" style="margin-bottom:10px;">가지고 있는 엑셀/CSV 파일도 불러올 수 있어요. 첫 번째 칸에 항목명, 두 번째 칸에 금액이 있으면 자동으로 인식해요.</p>
+      <button class="btn secondary" onclick="document.getElementById('spreadsheet-file-input').click()">엑셀 · CSV 불러오기</button>
+      <input type="file" id="spreadsheet-file-input" accept=".xlsx,.xls,.csv" style="display:none;">
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn secondary" onclick="exportCSV()">CSV로 내보내기</button>
+    <button class="btn danger" onclick="resetAll()">전체 초기화</button>
+  </div>
+
+</div>
+<div class="save-toast" id="toast">저장됐어요</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+const STORAGE_KEY = 'salary-ledger-data-v5';
+
+const GROSS_ITEM_DEFS = [
+  {key:'base', name:'기본급'},
+  {key:'overtime', name:'연장수당'},
+  {key:'dutyResponsibility', name:'직무책임급'},
+  {key:'dutyPerformance', name:'직무성과급'},
+  {key:'dutyPerformanceOvertime', name:'직무성과급(연장수당)'},
+  {key:'qualification', name:'자격수당'},
+];
+const EXPENSE_DEFS = [
+  {key:'cardBill', name:'신용카드 (전달 카드청구)'},
+  {key:'debitCard', name:'체크카드 (당월 현금사용)'},
+  {key:'rent', name:'월세'},
+  {key:'education', name:'교육비'},
+];
+const RESERVE_DEFS = [
+  {key:'travel', name:'여행비'},
+  {key:'event', name:'경조비'},
+  {key:'hobby', name:'취미생활 (운동 등)'},
+  {key:'grooming', name:'의류·미용비'},
+];
+
+function defaultData(){
+  return {
+    grossItems:{ base:0, overtime:0, dutyResponsibility:0, dutyPerformance:0, dutyPerformanceOvertime:0, qualification:0 },
+    grossOtherItems:[],
+    debtItems:[],
+    livingItems:[],
+    investItems:[{name:'적금',amount:0},{name:'청약',amount:0},{name:'주식',amount:0}],
+    investGoal:60,
+    expenseAmt:{ cardBill:0, debitCard:0, rent:0, living:0, buffer:0, education:0 },
+    reservePct:{ travel:1, event:1, hobby:0, grooming:0 },
+    reserveBalance:{ travel:0, event:0, hobby:0, grooming:0 },
+    assets:0, liabilities:0,
+    history:[],
+    salaryHistory:[]
+  };
+}
+
+// Converts data saved by older versions of this app into the current shape,
+// so nothing already entered is lost when the app is updated.
+function migrateLegacyShape(merged, parsed){
+  const fixedTotal = GROSS_ITEM_DEFS.reduce((s,def)=>s+((merged.grossItems&&merged.grossItems[def.key])||0),0);
+  const otherTotal = (merged.grossOtherItems||[]).reduce((s,it)=>s+(it.amount||0),0);
+  const debtTotal = (merged.debtItems||[]).reduce((s,it)=>s+(it.amount||0),0);
+  const availableAtLoad = fixedTotal + otherTotal - debtTotal;
+
+  if(parsed.investItems && parsed.investItems.length && parsed.investItems[0].amount===undefined && parsed.investItems[0].pct!==undefined){
+    merged.investItems = parsed.investItems.map(it=>({ name: it.name, amount: Math.round(availableAtLoad * (it.pct||0) / 100) }));
+  }
+  if(parsed.expensePct && !parsed.expenseAmt){
+    const amt = {};
+    ['cardBill','debitCard','rent','living','buffer','education'].forEach(key=>{
+      const pct = parsed.expensePct[key]||0;
+      amt[key] = Math.round(availableAtLoad * pct / 100);
+    });
+    merged.expenseAmt = amt;
+  }
+  if(parsed.debtItems && parsed.debtItems.length && parsed.debtItems[0].amount===undefined && parsed.debtItems[0].pct!==undefined){
+    merged.debtItems = parsed.debtItems.map(it=>({ name: it.name, amount: Math.round((fixedTotal+otherTotal) * (it.pct||0) / 100) }));
+  }
+  if((!parsed.livingItems || parsed.livingItems.length===0) && parsed.expenseAmt && parsed.expenseAmt.living){
+    merged.livingItems = [{ name:'생활비 (이전 입력값)', amount: parsed.expenseAmt.living }];
+  }
+  return merged;
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      let merged = Object.assign(defaultData(), parsed);
+      merged = migrateLegacyShape(merged, parsed);
+      merged = backfillReserveKeys(merged);
+      return merged;
+    }
+  }catch(e){}
+  return defaultData();
+}
+// Object.assign only shallow-merges, so an older saved reservePct/reserveBalance
+// object (missing newly added categories) would otherwise silently drop them.
+function backfillReserveKeys(d){
+  RESERVE_DEFS.forEach(def=>{
+    if(d.reservePct[def.key]===undefined) d.reservePct[def.key] = 0;
+    if(d.reserveBalance[def.key]===undefined) d.reserveBalance[def.key] = 0;
+  });
+  return d;
+}
+
+let data = loadData();
+let otherAddSign = 1;
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  showToast('저장됐어요');
+}
+function autosave(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+function won(n){ n = Math.round(n||0); return n.toLocaleString('ko-KR') + '원'; }
+function pctStr(n){
+  const rounded = Math.round(n*10)/10;
+  return (Number.isInteger(rounded) ? rounded : rounded.toFixed(1)) + '%';
+}
+function parseNum(str){
+  if(str===undefined || str===null) return 0;
+  const cleaned = String(str).replace(/,/g,'').trim();
+  if(cleaned==='' || cleaned==='-') return 0;
+  const n = Number(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+function formatMoneyInput(el){
+  let raw = el.value.replace(/[^\d]/g,'');
+  raw = raw.replace(/^0+(?=\d)/,'');
+  if(raw===''){ el.value = ''; return 0; }
+  const num = parseInt(raw,10);
+  const formatted = num.toLocaleString('ko-KR');
+  const cursorAtEnd = el.selectionEnd === el.value.length;
+  el.value = formatted;
+  if(cursorAtEnd) el.setSelectionRange(el.value.length, el.value.length);
+  return num;
+}
+function bindMoneyInput(id, onChange){
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{ onChange(formatMoneyInput(el)); });
+}
+function currentMonthStr(){
+  const now = new Date();
+  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+}
+function bindEnterToSubmit(ids, onSubmit){
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ e.preventDefault(); onSubmit(); }
+    });
+  });
+}
+function escapeHtml(str){ const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
+
+/* ---------- 계산 ---------- */
+function getGrossFixedTotal(){
+  return GROSS_ITEM_DEFS.reduce((s,def)=>s+(data.grossItems[def.key]||0),0);
+}
+function getOtherTotal(){ return data.grossOtherItems.reduce((s,it)=>s+(it.amount||0),0); }
+function getGrossTotal(){ return getGrossFixedTotal(); }
+function getSalary(){ return getGrossFixedTotal() + getOtherTotal(); }
+function getDebtTotal(){ return data.debtItems.reduce((s,it)=>s+(it.amount||0),0); }
+function getInvestTotal(){ return data.investItems.reduce((s,it)=>s+(it.amount||0),0); }
+function getAvailableAmount(){ return getSalary() - getDebtTotal() - getInvestTotal(); }
+function getLivingTotal(){ return data.livingItems.reduce((s,it)=>s+(it.amount||0),0); }
+function getReserveContribTotal(){
+  const available = getAvailableAmount();
+  return Object.values(data.reservePct).reduce((s,v)=>s+v,0) * available/100;
+}
+function getBufferAmount(){
+  const available = getAvailableAmount();
+  const otherExpenseSum = EXPENSE_DEFS.reduce((s,def)=>s+(data.expenseAmt[def.key]||0),0) + getLivingTotal();
+  return available - otherExpenseSum - getReserveContribTotal();
+}
+
+/* =================================================================
+   INPUT ZONE — plain entry rows/lists, no computed percentages here.
+   ================================================================= */
+function renderGrossInputRows(){
+  const wrap = document.getElementById('gross-input-rows');
+  wrap.innerHTML = '';
+  GROSS_ITEM_DEFS.forEach(def=>{
+    const val = data.grossItems[def.key]||0;
+    const row = document.createElement('div');
+    row.className = 'in-row';
+    row.innerHTML = `<label>${def.name}</label><input type="text" inputmode="numeric" class="money-input" data-key="${def.key}" value="${val?val.toLocaleString('ko-KR'):''}" placeholder="0">`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input.money-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      data.grossItems[e.target.dataset.key] = formatMoneyInput(e.target);
+      refreshAll();
+      autosave();
+    });
+  });
+}
+function renderGrossOtherItems(){
+  const body = document.getElementById('gross-other-body');
+  body.innerHTML = '';
+  if(data.grossOtherItems.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="3">추가된 항목이 없어요</td></tr>';
+  }else{
+    data.grossOtherItems.forEach((it, idx)=>{
+      const neg = it.amount < 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(it.name)}</td>
+        <td class="num-cell" style="color:${neg?'var(--warn)':'var(--text)'};">${won(it.amount)}</td>
+        <td><button class="btn danger" onclick="removeGrossOtherItem(${idx})">삭제</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+function addGrossOtherItem(){
+  const nameEl = document.getElementById('gross-other-name');
+  const amtEl = document.getElementById('gross-other-amount');
+  const name = nameEl.value.trim();
+  const magnitude = parseNum(amtEl.value);
+  if(!name || !magnitude){ showToast('내용과 금액을 입력해주세요'); return; }
+  data.grossOtherItems.push({name, amount: otherAddSign===-1 ? -magnitude : magnitude});
+  nameEl.value=''; amtEl.value='';
+  refreshAll();
+  saveData();
+}
+function removeGrossOtherItem(idx){
+  data.grossOtherItems.splice(idx,1);
+  refreshAll();
+  saveData();
+}
+
+function renderDebtInputList(){
+  const body = document.getElementById('debt-body');
+  body.innerHTML = '';
+  if(data.debtItems.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="3">등록된 항목이 없어요</td></tr>';
+  }else{
+    data.debtItems.forEach((it, idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(it.name)}</td>
+        <td class="num-cell">${won(it.amount)}</td>
+        <td><button class="btn danger" onclick="removeDebtItem(${idx})">삭제</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+function addDebtItem(){
+  const nameEl = document.getElementById('debt-name');
+  const amtEl = document.getElementById('debt-amount');
+  const name = nameEl.value.trim();
+  const amount = parseNum(amtEl.value);
+  if(!name || !amount){ showToast('항목명과 금액을 입력해주세요'); return; }
+  data.debtItems.push({name, amount});
+  nameEl.value=''; amtEl.value='';
+  refreshAll();
+  saveData();
+}
+function removeDebtItem(idx){
+  data.debtItems.splice(idx,1);
+  refreshAll();
+  saveData();
+}
+
+function renderInvestInputList(){
+  const body = document.getElementById('invest-body');
+  body.innerHTML = '';
+  if(data.investItems.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="3">등록된 항목이 없어요</td></tr>';
+  }else{
+    data.investItems.forEach((it, idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(it.name)}</td>
+        <td class="num-cell">${won(it.amount)}</td>
+        <td><button class="btn danger" onclick="removeInvestItem(${idx})">삭제</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+function addInvestItem(){
+  const nameEl = document.getElementById('invest-name');
+  const amtEl = document.getElementById('invest-amount');
+  const name = nameEl.value.trim();
+  const amount = parseNum(amtEl.value);
+  if(!name || !amount){ showToast('항목명과 금액을 입력해주세요'); return; }
+  data.investItems.push({name, amount});
+  nameEl.value=''; amtEl.value='';
+  refreshAll();
+  saveData();
+}
+function removeInvestItem(idx){
+  data.investItems.splice(idx,1);
+  refreshAll();
+  saveData();
+}
+
+function renderExpenseInputRows(){
+  const wrap = document.getElementById('expense-input-rows');
+  wrap.innerHTML = '';
+  EXPENSE_DEFS.forEach(def=>{
+    const val = data.expenseAmt[def.key]||0;
+    const row = document.createElement('div');
+    row.className = 'in-row';
+    row.innerHTML = `<label>${def.name}</label><input type="text" inputmode="numeric" class="money-input" data-key="${def.key}" value="${val?val.toLocaleString('ko-KR'):''}" placeholder="0">`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input.money-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      data.expenseAmt[e.target.dataset.key] = formatMoneyInput(e.target);
+      refreshAll();
+      autosave();
+    });
+  });
+}
+function renderLivingInputList(){
+  const body = document.getElementById('living-item-body');
+  body.innerHTML = '';
+  if(data.livingItems.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="3">등록된 소비 내역이 없어요</td></tr>';
+  }else{
+    data.livingItems.forEach((it, idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(it.name)}</td>
+        <td class="num-cell">${won(it.amount)}</td>
+        <td><button class="btn danger" onclick="removeLivingItem(${idx})">삭제</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+function addLivingItem(){
+  const nameEl = document.getElementById('living-item-name');
+  const amtEl = document.getElementById('living-item-amount');
+  const name = nameEl.value.trim();
+  const amount = parseNum(amtEl.value);
+  if(!name || !amount){ showToast('내역과 금액을 입력해주세요'); return; }
+  data.livingItems.push({name, amount});
+  nameEl.value=''; amtEl.value='';
+  refreshAll();
+  saveData();
+}
+function removeLivingItem(idx){
+  data.livingItems.splice(idx,1);
+  refreshAll();
+  saveData();
+}
+
+function renderReserveInputRows(){
+  const wrap = document.getElementById('reserve-input-rows');
+  wrap.innerHTML = '';
+  RESERVE_DEFS.forEach(def=>{
+    const pct = data.reservePct[def.key];
+    const bal = data.reserveBalance[def.key]||0;
+    const row = document.createElement('div');
+    row.style.marginBottom = '12px';
+    row.innerHTML = `
+      <div class="in-row" style="margin-bottom:6px;">
+        <label>${def.name} (비율 %)</label>
+        <input type="number" data-key="${def.key}" class="reserve-pct-input" value="${pct}" style="width:70px;">
+      </div>
+      <div class="reserve-box">
+        <span>현재 적립액: <b>${won(bal)}</b></span>
+        <span>
+          <button class="btn sm" onclick="addReserveContribution('${def.key}')">이번 달 적립</button>
+          <button class="btn sm secondary" onclick="seedReserveAmount('${def.key}')">직접 금액 추가</button>
+          <button class="btn sm secondary" onclick="useReserve('${def.key}')">사용하기</button>
+        </span>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.reserve-pct-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      data.reservePct[e.target.dataset.key] = Number(e.target.value)||0;
+      refreshAll();
+      autosave();
+    });
+  });
+}
+function addReserveContribution(key){
+  const available = getAvailableAmount();
+  const amt = available*data.reservePct[key]/100;
+  if(amt<=0){ showToast('가용액과 비율을 먼저 입력해주세요'); return; }
+  data.reserveBalance[key] = (data.reserveBalance[key]||0) + amt;
+  renderReserveInputRows();
+  renderReserveStatement();
+  saveData();
+}
+function seedReserveAmount(key){
+  const input = prompt('지금 모아둔 돈에서 이 통장으로 옮겨둘 금액을 입력하세요 (원)');
+  if(input===null) return;
+  const amt = Number(String(input).replace(/,/g,''));
+  if(!amt || amt<=0){ showToast('올바른 금액을 입력해주세요'); return; }
+  data.reserveBalance[key] = (data.reserveBalance[key]||0) + amt;
+  renderReserveInputRows();
+  renderReserveStatement();
+  saveData();
+}
+function useReserve(key){
+  const input = prompt('사용할 금액을 입력하세요 (원)');
+  if(input===null) return;
+  const amt = Number(input);
+  if(!amt || amt<=0){ showToast('올바른 금액을 입력해주세요'); return; }
+  data.reserveBalance[key] = Math.max(0, (data.reserveBalance[key]||0) - amt);
+  renderReserveInputRows();
+  renderReserveStatement();
+  saveData();
+}
+
+/* =================================================================
+   상세내역 (read-only detail statement) — everything computed lives here.
+   ================================================================= */
+function renderGrossStatement(){
+  const salary = getSalary();
+  const wrap = document.getElementById('stmt-gross');
+  if(GROSS_ITEM_DEFS.every(def=>!data.grossItems[def.key])){
+    wrap.innerHTML = '<p class="stmt-empty">입력된 급여 항목이 없어요</p>';
+  }else{
+    wrap.innerHTML = GROSS_ITEM_DEFS.filter(def=>data.grossItems[def.key]).map(def=>
+      `<div class="stmt-row"><span class="name">${def.name}</span><span class="amt">${won(data.grossItems[def.key])}</span></div>`
+    ).join('');
+  }
+  document.getElementById('stmt-gross-total').textContent = won(getGrossTotal());
+
+  const otherWrap = document.getElementById('stmt-other');
+  if(data.grossOtherItems.length===0){
+    otherWrap.innerHTML = '';
+  }else{
+    otherWrap.innerHTML = data.grossOtherItems.map(it=>{
+      const color = it.amount<0 ? 'color:var(--warn);' : '';
+      return `<div class="stmt-row"><span class="name">${escapeHtml(it.name)}</span><span class="amt" style="${color}">${won(it.amount)}</span></div>`;
+    }).join('');
+  }
+  document.getElementById('stmt-net-pay').textContent = won(salary);
+}
+function renderDebtStatement(){
+  const salary = getSalary();
+  const wrap = document.getElementById('stmt-debt');
+  if(data.debtItems.length===0){
+    wrap.innerHTML = '<p class="stmt-empty">등록된 대출상환 항목이 없어요</p>';
+  }else{
+    wrap.innerHTML = data.debtItems.map(it=>{
+      const pct = salary>0 ? pctStr(it.amount/salary*100) : '0%';
+      return `<div class="stmt-row"><span class="name">${escapeHtml(it.name)}</span><span class="amt">${won(it.amount)}</span><span class="pct">${pct}</span></div>`;
+    }).join('');
+  }
+  const total = getDebtTotal();
+  document.getElementById('stmt-debt-total').textContent = won(total);
+  document.getElementById('stmt-debt-pct').textContent = salary>0 ? pctStr(total/salary*100) : '0%';
+}
+function renderInvestStatement(){
+  const salary = getSalary();
+  const available = getAvailableAmount();
+  const wrap = document.getElementById('stmt-invest');
+  if(data.investItems.length===0){
+    wrap.innerHTML = '<p class="stmt-empty">등록된 투자 항목이 없어요</p>';
+  }else{
+    wrap.innerHTML = data.investItems.map(it=>{
+      const pct = salary>0 ? pctStr(it.amount/salary*100) : '0%';
+      return `<div class="stmt-row"><span class="name">${escapeHtml(it.name)}</span><span class="amt">${won(it.amount)}</span><span class="pct">${pct}</span></div>`;
+    }).join('');
+  }
+  const total = getInvestTotal();
+  document.getElementById('stmt-invest-total').textContent = won(total);
+  document.getElementById('stmt-invest-pct').textContent = salary>0 ? pctStr(total/salary*100) : '0%';
+
+  const goal = data.investGoal;
+  const achievedPctOfAvailable = available>0 ? (total/available*100) : 0;
+  const diff = Math.round((achievedPctOfAvailable - goal)*10)/10;
+  const statusEl = document.getElementById('stmt-invest-goal-status');
+  if(Math.abs(diff) <= 1){
+    statusEl.textContent = `목표 비율(${goal}%)에 맞게 배분됐어요 (최종 가용액 대비 ${pctStr(achievedPctOfAvailable)})`;
+    statusEl.className = 'hint good';
+  }else if(diff < 0){
+    statusEl.textContent = `목표(${goal}%)보다 ${pctStr(Math.abs(diff))}p 부족해요 (최종 가용액 대비 ${pctStr(achievedPctOfAvailable)})`;
+    statusEl.className = 'hint bad';
+  }else{
+    statusEl.textContent = `목표(${goal}%)보다 ${pctStr(diff)}p 초과했어요 (최종 가용액 대비 ${pctStr(achievedPctOfAvailable)})`;
+    statusEl.className = 'hint bad';
+  }
+}
+function renderAvailableStatement(){
+  const amt = getAvailableAmount();
+  const el = document.getElementById('stmt-available');
+  el.textContent = won(amt);
+  el.style.color = amt<0 ? 'var(--warn)' : '';
+}
+function renderExpenseStatement(){
+  const salary = getSalary();
+  const wrap = document.getElementById('stmt-expense');
+  wrap.innerHTML = EXPENSE_DEFS.map(def=>{
+    const amt = data.expenseAmt[def.key]||0;
+    const pct = salary>0 ? (amt/salary*100) : 0;
+    return `<div class="stmt-row"><span class="name">${def.name}</span><span class="amt">${won(amt)}</span><span class="pct">${pctStr(pct)}</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%;"></div></div>`;
+  }).join('');
+
+  const livingTotal = getLivingTotal();
+  const livingPct = salary>0 ? (livingTotal/salary*100) : 0;
+  const livingWrap = document.getElementById('stmt-living-items');
+  let livingHtml = `<div class="stmt-row"><span class="name">생활비</span><span class="amt">${won(livingTotal)}</span><span class="pct">${pctStr(livingPct)}</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.min(livingPct,100)}%;"></div></div>`;
+  const lo = salary*0.15, hi = salary*0.25;
+  let cls='hint', msg=`일반적인 가이드라인은 실수령액의 15~25% (${won(lo)} ~ ${won(hi)}) 수준이에요.`;
+  if(salary>0){
+    if(livingTotal < lo){ cls='hint bad'; msg += ' 지금 배분은 그보다 낮은 편이에요.'; }
+    else if(livingTotal > hi){ cls='hint bad'; msg += ' 지금 배분은 그보다 높은 편이에요.'; }
+    else { cls='hint good'; msg += ' 지금 배분은 이 범위 안에 있어요.'; }
+  }
+  livingHtml += `<div class="${cls}">${msg}</div>`;
+  if(data.livingItems.length>0){
+    livingHtml += data.livingItems.map(it=>
+      `<div class="stmt-row" style="padding-left:10px; font-size:12px; color:var(--sub);"><span class="name">· ${escapeHtml(it.name)}</span><span class="amt" style="font-weight:400;">${won(it.amount)}</span></div>`
+    ).join('');
+  }
+  livingWrap.innerHTML = livingHtml;
+
+  const bufferAmt = getBufferAmount();
+  data.expenseAmt.buffer = bufferAmt;
+  data.expenseAmt.living = livingTotal;
+  const bufferPct = salary>0 ? (bufferAmt/salary*100) : 0;
+  const bufferEl = document.getElementById('stmt-buffer');
+  bufferEl.textContent = won(bufferAmt);
+  bufferEl.style.color = bufferAmt<0 ? 'var(--warn)' : '';
+  document.getElementById('stmt-buffer-pct').textContent = pctStr(bufferPct);
+  const bufferHintEl = document.getElementById('stmt-buffer-hint');
+  if(bufferAmt<0){
+    bufferHintEl.className = 'hint bad';
+    bufferHintEl.textContent = `다른 지출과 적립액이 최종 가용액보다 ${won(-bufferAmt)} 더 많아요. 항목을 조정해보세요.`;
+  }else{
+    bufferHintEl.className = 'hint';
+    bufferHintEl.textContent = '최종 가용액에서 다른 지출과 적립액을 뺀 나머지예요.';
+  }
+}
+function renderReserveStatement(){
+  const available = getAvailableAmount();
+  const wrap = document.getElementById('stmt-reserve');
+  wrap.innerHTML = RESERVE_DEFS.map(def=>{
+    const pct = data.reservePct[def.key];
+    const amt = available*pct/100;
+    const bal = data.reserveBalance[def.key]||0;
+    return `<div class="stmt-row"><span class="name">${def.name} (월 ${pct}%)</span><span class="amt">${won(amt)}</span></div>
+    <div class="stmt-row" style="padding-left:10px; font-size:12px; color:var(--sub);"><span class="name">누적 잔액</span><span class="amt" style="font-weight:400;">${won(bal)}</span></div>`;
+  }).join('');
+}
+function renderNetWorthStatement(){
+  document.getElementById('stmt-assets').textContent = won(data.assets||0);
+  document.getElementById('stmt-liabilities').textContent = won(data.liabilities||0);
+  document.getElementById('stmt-networth').textContent = won((data.assets||0)-(data.liabilities||0));
+}
+
+function refreshAll(){
+  // input zone
+  renderGrossOtherItems();
+  renderDebtInputList();
+  renderInvestInputList();
+  renderLivingInputList();
+  // statement zone
+  renderGrossStatement();
+  renderDebtStatement();
+  renderInvestStatement();
+  renderAvailableStatement();
+  renderExpenseStatement();
+  renderReserveStatement();
+  renderNetWorthStatement();
+  // quick totals shown inline in the input cards
+  document.getElementById('quick-salary').textContent = won(getSalary());
+  document.getElementById('quick-debt').textContent = won(getDebtTotal());
+  document.getElementById('quick-invest').textContent = won(getInvestTotal());
+  document.getElementById('quick-living').textContent = won(getLivingTotal());
+  document.getElementById('quick-buffer').textContent = won(getBufferAmount());
+  document.getElementById('quick-networth').textContent = won((data.assets||0)-(data.liabilities||0));
+  // sticky top bar
+  const available = getAvailableAmount();
+  const buffer = getBufferAmount();
+  const topAvail = document.getElementById('top-available-display');
+  topAvail.textContent = won(available);
+  topAvail.className = 'value ' + (available<0?'bad':'');
+  const topBuf = document.getElementById('top-buffer-display');
+  topBuf.textContent = won(buffer);
+  topBuf.className = 'value ' + (buffer<0?'bad':'');
+}
+
+function renderAll(){
+  renderGrossInputRows();
+  renderExpenseInputRows();
+  renderReserveInputRows();
+  refreshAll();
+  renderHistory();
+  renderMonthlyHistory();
+}
+
+/* ---------- 월별 기록 ---------- */
+function saveMonthlyRecord(){
+  const dateStr = document.getElementById('salary-record-month').value || currentMonthStr();
+  const entry = {
+    date:dateStr,
+    grossItems: Object.assign({}, data.grossItems),
+    grossOtherItems: data.grossOtherItems.map(it=>Object.assign({}, it)),
+    debtItems: data.debtItems.map(it=>Object.assign({}, it)),
+    investItems: data.investItems.map(it=>Object.assign({}, it)),
+    livingItems: data.livingItems.map(it=>Object.assign({}, it)),
+    expenseAmt: Object.assign({}, data.expenseAmt),
+    grossTotal: getGrossTotal(),
+    netPay: getSalary(),
+    debtTotal: getDebtTotal(),
+    investTotal: getInvestTotal(),
+    livingAmt: getLivingTotal(),
+    bufferAmt: getBufferAmount()
+  };
+  const idx = data.salaryHistory.findIndex(h=>h.date===dateStr);
+  if(idx>=0) data.salaryHistory[idx]=entry; else data.salaryHistory.push(entry);
+  data.salaryHistory.sort((a,b)=>a.date.localeCompare(b.date));
+
+  const assets = data.assets||0, liabilities = data.liabilities||0;
+  const nwEntry = {date:dateStr, assets, liabilities, netWorth: assets-liabilities};
+  const nwIdx = data.history.findIndex(h=>h.date===dateStr);
+  if(nwIdx>=0) data.history[nwIdx]=nwEntry; else data.history.push(nwEntry);
+  data.history.sort((a,b)=>a.date.localeCompare(b.date));
+
+  renderMonthlyHistory(); renderHistory(); saveData();
+}
+function removeMonthlyRecord(idx){
+  const entry = data.salaryHistory[idx];
+  if(entry && !confirm(`${entry.date} 기록을 삭제할까요?`)) return;
+  data.salaryHistory.splice(idx,1); renderMonthlyHistory(); saveData();
+}
+function editMonthlyRecord(idx){
+  const entry = data.salaryHistory[idx];
+  if(!entry) return;
+  applyRecordToCurrent(entry);
+  const nwEntry = data.history.find(h=>h.date===entry.date);
+  if(nwEntry){
+    data.assets = nwEntry.assets||0;
+    data.liabilities = nwEntry.liabilities||0;
+    document.getElementById('assets-input').value = data.assets ? data.assets.toLocaleString('ko-KR') : '';
+    document.getElementById('liabilities-input').value = data.liabilities ? data.liabilities.toLocaleString('ko-KR') : '';
+  }
+  document.getElementById('salary-record-month').value = entry.date;
+  renderAll();
+  saveData();
+  showToast(`${entry.date} 기록을 불러왔어요. 수정 후 다시 저장해주세요`);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function applyRecordToCurrent(entry){
+  data.grossItems = Object.assign({}, data.grossItems, entry.grossItems);
+  data.grossOtherItems = (entry.grossOtherItems||[]).map(it=>Object.assign({}, it));
+  if(entry.debtItems) data.debtItems = entry.debtItems.map(it=>Object.assign({}, it));
+  if(entry.investItems) data.investItems = entry.investItems.map(it=>Object.assign({}, it));
+  if(entry.livingItems) data.livingItems = entry.livingItems.map(it=>Object.assign({}, it));
+  if(entry.expenseAmt) data.expenseAmt = Object.assign({}, data.expenseAmt, entry.expenseAmt);
+}
+function copyLastMonth(){
+  if(data.salaryHistory.length===0){ showToast('저장된 지난달 기록이 없어요'); return; }
+  const last = data.salaryHistory[data.salaryHistory.length-1];
+  if(!confirm(`${last.date} 기록의 값을 현재 입력칸에 채울까요? 지금 입력 중인 값은 덮어써져요.`)) return;
+  applyRecordToCurrent(last);
+  renderAll();
+  saveData();
+  showToast(`${last.date} 값을 불러왔어요`);
+}
+function renderMonthlyHistory(){
+  const body = document.getElementById('monthly-history-body');
+  body.innerHTML = '';
+  if(data.salaryHistory.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="8">저장된 월별 기록이 없어요</td></tr>';
+    return;
+  }
+  data.salaryHistory.forEach((h,idx)=>{
+    const net = h.netPay||0;
+    const pctOf = v => net>0 ? pctStr(v/net*100) : '0%';
+    const debtTotal = h.debtTotal||0, investTotal = h.investTotal||0, livingAmt = h.livingAmt||0, bufferAmt = h.bufferAmt||0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${h.date}</td>
+      <td class="num-cell">${won(h.grossTotal)}</td>
+      <td class="num-cell" style="font-weight:700;">${won(net)}</td>
+      <td class="num-cell">${won(debtTotal)}<br><span style="font-size:11px;color:var(--sub);">${pctOf(debtTotal)}</span></td>
+      <td class="num-cell">${won(investTotal)}<br><span style="font-size:11px;color:var(--sub);">${pctOf(investTotal)}</span></td>
+      <td class="num-cell">${won(livingAmt)}<br><span style="font-size:11px;color:var(--sub);">${pctOf(livingAmt)}</span></td>
+      <td class="num-cell" style="${bufferAmt<0?'color:var(--warn);':''}">${won(bufferAmt)}<br><span style="font-size:11px;color:var(--sub);">${pctOf(bufferAmt)}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn secondary sm" onclick="editMonthlyRecord(${idx})">수정</button>
+        <button class="btn danger" onclick="removeMonthlyRecord(${idx})">삭제</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- 순자산 ---------- */
+function saveSnapshot(){
+  const dateStr = document.getElementById('salary-record-month').value || currentMonthStr();
+  const assets = data.assets||0, liabilities = data.liabilities||0;
+  const netWorth = assets-liabilities;
+  const idx = data.history.findIndex(h=>h.date===dateStr);
+  const entry = {date:dateStr, assets, liabilities, netWorth};
+  if(idx>=0) data.history[idx]=entry; else data.history.push(entry);
+  data.history.sort((a,b)=>a.date.localeCompare(b.date));
+  renderHistory(); saveData();
+}
+function removeHistory(idx){
+  const entry = data.history[idx];
+  if(entry && !confirm(`${entry.date} 스냅샷을 삭제할까요?`)) return;
+  data.history.splice(idx,1); renderHistory(); saveData();
+}
+function editHistory(idx){
+  const entry = data.history[idx];
+  if(!entry) return;
+  data.assets = entry.assets||0;
+  data.liabilities = entry.liabilities||0;
+  document.getElementById('assets-input').value = data.assets ? data.assets.toLocaleString('ko-KR') : '';
+  document.getElementById('liabilities-input').value = data.liabilities ? data.liabilities.toLocaleString('ko-KR') : '';
+  document.getElementById('salary-record-month').value = entry.date;
+  refreshAll();
+  saveData();
+  showToast(`${entry.date} 스냅샷을 불러왔어요. 수정 후 다시 저장해주세요`);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function renderHistory(){
+  const body = document.getElementById('history-body');
+  body.innerHTML = '';
+  if(data.history.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="5">저장된 스냅샷이 없어요</td></tr>';
+  }else{
+    data.history.forEach((h,idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${h.date}</td>
+        <td class="num-cell">${won(h.assets)}</td>
+        <td class="num-cell">${won(h.liabilities)}</td>
+        <td class="num-cell" style="font-weight:700;">${won(h.netWorth)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn secondary sm" onclick="editHistory(${idx})">수정</button>
+          <button class="btn danger" onclick="removeHistory(${idx})">삭제</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+  renderChart();
+}
+function renderChart(){
+  const wrap = document.getElementById('chart-wrap');
+  const hist = data.history;
+  if(hist.length<2){
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--sub);">스냅샷을 2개 이상 저장하면 추이 그래프가 나타나요.</p>';
+    return;
+  }
+  const W=680,H=200,padL=60,padR=16,padT=16,padB=26;
+  const values = hist.map(h=>h.netWorth);
+  const minV=Math.min(...values,0), maxV=Math.max(...values,0);
+  const range=(maxV-minV)||1;
+  const xStep=(W-padL-padR)/(hist.length-1);
+  const yFor = v => padT+(H-padT-padB)*(1-(v-minV)/range);
+  const xFor = i => padL+i*xStep;
+  let path=''; hist.forEach((h,i)=>{ const x=xFor(i),y=yFor(h.netWorth); path += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' '; });
+  const zeroY=yFor(0);
+  let dots='', labels='';
+  hist.forEach((h,i)=>{
+    const x=xFor(i), y=yFor(h.netWorth);
+    dots += `<circle cx="${x}" cy="${y}" r="3" fill="#2563EB"/>`;
+    labels += `<text x="${x}" y="${H-8}" font-size="10" fill="#6B7280" text-anchor="middle">${h.date.slice(2)}</text>`;
+  });
+  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
+    <line x1="${padL}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="3,3"/>
+    <path d="${path}" fill="none" stroke="#2563EB" stroke-width="2"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+/* ---------- 백업 저장 / 불러오기 ---------- */
+function exportBackup(){
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `월급배분표_백업_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('백업 파일을 저장했어요');
+}
+function importBackupFile(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      let merged = Object.assign(defaultData(), parsed);
+      merged = migrateLegacyShape(merged, parsed);
+      merged = backfillReserveKeys(merged);
+      data = merged;
+      renderAll();
+      saveData();
+      showToast('백업 파일을 불러왔어요');
+    }catch(err){
+      showToast('백업 파일을 읽을 수 없어요. 형식을 확인해주세요');
+    }
+  };
+  reader.readAsText(file);
+}
+function parseAmountCell(v){
+  if(typeof v === 'number') return v;
+  if(v===undefined || v===null) return NaN;
+  const cleaned = String(v).replace(/[,원%\s]/g,'');
+  if(cleaned==='') return NaN;
+  const n = Number(cleaned);
+  return isNaN(n) ? NaN : n;
+}
+function getImportFieldSetters(){
+  return {
+    '기본급': v=>{ data.grossItems.base = v; },
+    '연장수당': v=>{ data.grossItems.overtime = v; },
+    '직무책임급': v=>{ data.grossItems.dutyResponsibility = v; },
+    '직무성과급': v=>{ data.grossItems.dutyPerformance = v; },
+    '직무성과급(연장수당)': v=>{ data.grossItems.dutyPerformanceOvertime = v; },
+    '자격수당': v=>{ data.grossItems.qualification = v; },
+    '그외': v=>{ data.grossOtherItems.push({name:'그외', amount:v}); },
+    '공제계': v=>{ data.grossOtherItems.push({name:'공제계', amount: v>0?-v:v}); },
+    '총자산': v=>{ data.assets = v; },
+    '자산': v=>{ data.assets = v; },
+    '총부채': v=>{ data.liabilities = v; },
+    '부채': v=>{ data.liabilities = v; },
+  };
+}
+function processImportedRows(rows){
+  const setters = getImportFieldSetters();
+  let matched = 0;
+  rows.forEach(row=>{
+    if(!row || row.length<2) return;
+    const label = String(row[0]||'').trim();
+    if(!label || !setters[label]) return;
+    const amount = parseAmountCell(row[1]);
+    if(isNaN(amount)) return;
+    setters[label](amount);
+    matched++;
+  });
+  renderAll();
+  saveData();
+  showToast(matched>0 ? `${matched}개 항목을 불러왔어요` : '일치하는 항목을 찾지 못했어요. 항목명을 확인해주세요');
+}
+function importSpreadsheetFile(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith('.csv')){
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const rows = e.target.result.split(/\r?\n/).filter(l=>l.trim()!=='').map(line=>line.split(','));
+      processImportedRows(rows);
+    };
+    reader.readAsText(file, 'utf-8');
+  }else{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        processImportedRows(XLSX.utils.sheet_to_json(sheet, {header:1}));
+      }catch(err){
+        showToast('엑셀 파일을 읽을 수 없어요');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+function exportCSV(){
+  const salary = getSalary();
+  let csv='\uFEFF';
+  csv += '급여 항목,금액\n';
+  GROSS_ITEM_DEFS.forEach(def=>{ csv += `${def.name},${data.grossItems[def.key]||0}\n`; });
+  csv += `총급여 합계,${getGrossTotal()}\n\n`;
+  csv += '그외 항목,금액\n';
+  data.grossOtherItems.forEach(it=>{ csv += `${it.name},${it.amount||0}\n`; });
+  csv += `실수령액,${salary}\n\n`;
+  csv += '대출상환 항목,금액\n';
+  data.debtItems.forEach(it=>{ csv += `${it.name},${it.amount||0}\n`; });
+  csv += `대출상환 합계,${getDebtTotal()}\n\n`;
+  csv += '투자 항목,금액,실수령액 대비\n';
+  data.investItems.forEach(it=>{ csv += `${it.name},${it.amount||0},${salary>0?(it.amount/salary*100).toFixed(1):0}%\n`; });
+  csv += `\n최종 가용액,${getAvailableAmount()}\n\n`;
+  csv += '지출 항목,금액,실수령액 대비\n';
+  EXPENSE_DEFS.forEach(def=>{ const amt=data.expenseAmt[def.key]||0; csv += `${def.name},${amt},${salary>0?(amt/salary*100).toFixed(1):0}%\n`; });
+  csv += `생활비 합계,${getLivingTotal()},${salary>0?(getLivingTotal()/salary*100).toFixed(1):0}%\n`;
+  csv += '\n생활비 소비내역,금액\n';
+  data.livingItems.forEach(it=>{ csv += `${it.name},${it.amount||0}\n`; });
+  csv += `\n여유비 (자동계산),${getBufferAmount()}\n\n`;
+  csv += '적립 항목,비율(가용액 기준),금액,누적잔액\n';
+  RESERVE_DEFS.forEach(def=>{ csv += `${def.name},${data.reservePct[def.key]}%,${Math.round(getAvailableAmount()*data.reservePct[def.key]/100)},${Math.round(data.reserveBalance[def.key]||0)}\n`; });
+  csv += '\n날짜,자산,부채,순자산\n';
+  data.history.forEach(h=>{ csv += `${h.date},${h.assets},${h.liabilities},${h.netWorth}\n`; });
+  csv += '\n월별 기록 (월,월급,수령액,대출상환,대출상환%,투자,투자%,생활비,생활비%,여유비,여유비%)\n';
+  data.salaryHistory.forEach(h=>{
+    const net = h.netPay||0;
+    const pctOf = v => net>0 ? (v/net*100).toFixed(1) : 0;
+    const debtTotal = h.debtTotal||0, investTotal = h.investTotal||0, livingAmt = h.livingAmt||0, bufferAmt = h.bufferAmt||0;
+    csv += `${h.date},${h.grossTotal},${net},${debtTotal},${pctOf(debtTotal)}%,${investTotal},${pctOf(investTotal)}%,${livingAmt},${pctOf(livingAmt)}%,${bufferAmt},${pctOf(bufferAmt)}%\n`;
+  });
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download = `월급배분_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function resetAll(){
+  if(!confirm('모든 데이터를 초기화할까요? 되돌릴 수 없어요.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  data = defaultData();
+  otherAddSign = 1;
+  document.getElementById('other-add-sign-btn').textContent = '+';
+  document.getElementById('assets-input').value='';
+  document.getElementById('liabilities-input').value='';
+  document.getElementById('invest-goal').value = data.investGoal;
+  document.getElementById('salary-record-month').value = currentMonthStr();
+  renderAll();
+  showToast('초기화됐어요');
+}
+
+function init(){
+  const now = new Date();
+  document.getElementById('today-label').textContent = now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
+  document.getElementById('salary-record-month').value = currentMonthStr();
+  document.getElementById('invest-goal').value = data.investGoal;
+  document.getElementById('assets-input').value = data.assets ? data.assets.toLocaleString('ko-KR') : '';
+  document.getElementById('liabilities-input').value = data.liabilities ? data.liabilities.toLocaleString('ko-KR') : '';
+
+  bindMoneyInput('assets-input', val=>{ data.assets = val; refreshAll(); autosave(); });
+  bindMoneyInput('liabilities-input', val=>{ data.liabilities = val; refreshAll(); autosave(); });
+  document.getElementById('invest-goal').addEventListener('input', e=>{
+    data.investGoal = Number(e.target.value)||0;
+    renderInvestStatement();
+    autosave();
+  });
+
+  document.getElementById('gross-other-amount').addEventListener('input', e=>{ formatMoneyInput(e.target); });
+  document.getElementById('debt-amount').addEventListener('input', e=>{ formatMoneyInput(e.target); });
+  document.getElementById('invest-amount').addEventListener('input', e=>{ formatMoneyInput(e.target); });
+  document.getElementById('living-item-amount').addEventListener('input', e=>{ formatMoneyInput(e.target); });
+
+  bindEnterToSubmit(['gross-other-name','gross-other-amount'], addGrossOtherItem);
+  bindEnterToSubmit(['debt-name','debt-amount'], addDebtItem);
+  bindEnterToSubmit(['invest-name','invest-amount'], addInvestItem);
+  bindEnterToSubmit(['living-item-name','living-item-amount'], addLivingItem);
+
+  const otherSignBtn = document.getElementById('other-add-sign-btn');
+  otherSignBtn.addEventListener('click', ()=>{
+    otherAddSign = (otherAddSign===-1) ? 1 : -1;
+    otherSignBtn.textContent = otherAddSign===-1 ? '−' : '+';
+  });
+
+  document.getElementById('backup-file-input').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file) importBackupFile(file);
+    e.target.value = '';
+  });
+  document.getElementById('spreadsheet-file-input').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file) importSpreadsheetFile(file);
+    e.target.value = '';
+  });
+
+  renderAll();
+}
+
+setInterval(autosave, 3000);
+init();
+
+// Register the service worker so the app can be installed and used offline.
+// This only caches the app's own files (HTML/CSS/JS) — it never touches
+// localStorage, so updating the app files never wipes saved data.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
